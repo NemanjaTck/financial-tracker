@@ -69,7 +69,19 @@
     "swapEmployee": "Zameni radnika",
     "markNotWorking": "Označi kao neradan",
     "daysBehind": "{count, plural, =0 {Sve je ažurno!} =1 {1 dan kašnjenja} few {# dana kašnjenja} other {# dana kašnjenja}}",
-    "schedule": "Raspored"
+    "schedule": "Raspored",
+    "notWorking": "Nije radio/la",
+    "uncheckedDays": "Nepotvrđeni dani",
+    "selectEmployee": "Izaberi radnika",
+    "selectJob": "Izaberi posao",
+    "hoursWorked": "Odrađeni sati",
+    "extraWork": "Vanredni rad",
+    "confirmAll": "Potvrdi sve",
+    "previousDay": "Prethodni dan",
+    "nextDay": "Sledeći dan",
+    "noEmployee": "Nema dodeljenih radnika",
+    "swapped": "Zamenjen",
+    "skipped": "Preskočen"
   },
   "employees": {
     "title": "Radnici",

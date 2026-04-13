@@ -1,12 +1,8 @@
-import { getTranslations } from "next-intl/server";
+import { getClients } from "./actions";
+import { ClientsList } from "./clients-list";
 
 export default async function ClientsPage() {
-  const t = await getTranslations("clients");
+  const clients = await getClients();
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold tracking-tight">{t("title")}</h2>
-      <p className="text-muted-foreground">{t("noClients")}</p>
-    </div>
-  );
+  return <ClientsList clients={clients} />;
 }

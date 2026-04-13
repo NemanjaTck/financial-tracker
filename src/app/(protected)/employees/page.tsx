@@ -1,12 +1,8 @@
-import { getTranslations } from "next-intl/server";
+import { getEmployees } from "./actions";
+import { EmployeesList } from "./employees-list";
 
 export default async function EmployeesPage() {
-  const t = await getTranslations("employees");
+  const employees = await getEmployees();
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold tracking-tight">{t("title")}</h2>
-      <p className="text-muted-foreground">{t("noEmployees")}</p>
-    </div>
-  );
+  return <EmployeesList employees={employees} />;
 }

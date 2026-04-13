@@ -1,0 +1,446 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+
+export type ScheduleEntry = {
+  work_log_id: string | null;
+  job_id: string;
+  employee_id: string;
+  employee_name: string;
+  job_location: string;
+  client_name: string;
+  default_hours: number;
+  hours: number;
+  checked: boolean;
+  is_extra: boolean;
+  notes: string | null;
+};
+
+/**
+ * Get the daily schedule for a given date.
+ * 1. Find active jobs scheduled for this day of week
+ * 2. Get assigned employees
+ * 3. Merge with existing work_logs for the date
+ */
+export async function getDailySchedule(dateStr: string) {
+  const supabase = await createClient();
+  const date = new Date(dateStr + "T00:00:00");
+  // JS getDay: 0=Sun, 1=Mon ... 6=Sat -> our schema: 1=Mon ... 6=Sat, 7=Sun
+  const jsDay = date.getDay();
+  const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+
+  // Get all active jobs with assignments, where work_days includes today
+  const { data: jobs, error: jobsError } = await supabase
+    .from("jobs")
+    .select(`
+      id, location_name, default_hours, employee_rate, client_rate, work_days,
+      clients ( id, name ),
+      job_assignments (
+        id, employee_id, custom_rate,
+        employees ( id, first_name, last_name )
+      )
+    `)
+    .eq("is_active", true)
+    .contains("work_days", [dayOfWeek]);
+
+  if (jobsError) throw jobsError;
+
+  // Get existing work logs for this date
+  const { data: existingLogs, error: logsError } = await supabase
+    .from("work_logs")
+    .select("*")
+    .eq("date", dateStr);
+
+  if (logsError) throw logsError;
+
+  const logMap = new Map<string, typeof existingLogs[number]>();
+  for (const log of existingLogs ?? []) {
+    logMap.set(`${log.job_id}_${log.employee_id}`, log);
+  }
+
+  // Build schedule entries
+  const entries: ScheduleEntry[] = [];
+
+  for (const job of jobs ?? []) {
+    for (const assignment of job.job_assignments ?? []) {
+      const key = `${job.id}_${assignment.employee_id}`;
+      const existingLog = logMap.get(key);
+
+      const emp = assignment.employees as unknown as { id: string; first_name: string; last_name: string };
+      const client = job.clients as unknown as { id: string; name: string };
+
+      entries.push({
+        work_log_id: existingLog?.id ?? null,
+        job_id: job.id,
+        employee_id: assignment.employee_id,
+        employee_name: `${emp.first_name} ${emp.last_name}`,
+        job_location: job.location_name,
+        client_name: client.name,
+        default_hours: job.default_hours,
+        hours: existingLog?.hours ?? job.default_hours,
+        checked: existingLog?.checked ?? false,
+        is_extra: existingLog?.is_extra ?? false,
+        notes: existingLog?.notes ?? null,
+      });
+
+      // Remove from map so we can find extra logs
+      logMap.delete(key);
+    }
+  }
+
+  // Add extra/ad-hoc work logs (those not matching scheduled jobs for today)
+  for (const log of existingLogs ?? []) {
+    const key = `${log.job_id}_${log.employee_id}`;
+    if (!logMap.has(key)) continue; // already handled above
+    // This is an extra entry — need job + employee info
+  }
+
+  // Also fetch extra work logs (is_extra=true for this date, or logs for jobs not scheduled today)
+  const { data: extraLogs, error: extraError } = await supabase
+    .from("work_logs")
+    .select(`
+      *,
+      jobs ( id, location_name, default_hours, clients ( id, name ) ),
+      employees ( id, first_name, last_name )
+    `)
+    .eq("date", dateStr)
+    .eq("is_extra", true);
+
+  if (extraError) throw extraError;
+
+  for (const log of extraLogs ?? []) {
+    // Skip if already in entries
+    if (entries.some((e) => e.work_log_id === log.id)) continue;
+
+    const logEmp = log.employees as unknown as { id: string; first_name: string; last_name: string };
+    const logJob = log.jobs as unknown as { id: string; location_name: string; default_hours: number; clients: { id: string; name: string } };
+
+    entries.push({
+      work_log_id: log.id,
+      job_id: log.job_id,
+      employee_id: log.employee_id,
+      employee_name: `${logEmp.first_name} ${logEmp.last_name}`,
+      job_location: logJob.location_name,
+      client_name: logJob.clients.name,
+      default_hours: logJob.default_hours,
+      hours: log.hours,
+      checked: log.checked,
+      is_extra: true,
+      notes: log.notes,
+    });
+  }
+
+  return entries;
+}
+
+/**
+ * Check in (confirm attendance) — creates or updates a work_log
+ */
+export async function checkIn(
+  jobId: string,
+  employeeId: string,
+  date: string,
+  hours: number
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("work_logs")
+    .upsert(
+      {
+        user_id: user.id,
+        job_id: jobId,
+        employee_id: employeeId,
+        date,
+        hours,
+        checked: true,
+        is_extra: false,
+      },
+      { onConflict: "job_id,employee_id,date" }
+    );
+
+  if (error) throw error;
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Uncheck a work log entry
+ */
+export async function uncheckEntry(workLogId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("work_logs")
+    .update({ checked: false })
+    .eq("id", workLogId);
+
+  if (error) throw error;
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Update hours on an existing or new work log
+ */
+export async function updateHours(
+  jobId: string,
+  employeeId: string,
+  date: string,
+  hours: number
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("work_logs")
+    .upsert(
+      {
+        user_id: user.id,
+        job_id: jobId,
+        employee_id: employeeId,
+        date,
+        hours,
+        checked: true,
+        is_extra: false,
+      },
+      { onConflict: "job_id,employee_id,date" }
+    );
+
+  if (error) throw error;
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Mark as not working — delete the work log for this entry
+ */
+export async function markNotWorking(workLogId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("work_logs")
+    .delete()
+    .eq("id", workLogId);
+
+  if (error) throw error;
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Mark as not working by job+employee+date (when no log exists yet)
+ */
+export async function skipEntry(
+  jobId: string,
+  employeeId: string,
+  date: string
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // Create a log with 0 hours and checked=true to mark as skipped
+  const { error } = await supabase
+    .from("work_logs")
+    .upsert(
+      {
+        user_id: user.id,
+        job_id: jobId,
+        employee_id: employeeId,
+        date,
+        hours: 0,
+        checked: true,
+        is_extra: false,
+        notes: "skipped",
+      },
+      { onConflict: "job_id,employee_id,date" }
+    );
+
+  if (error) throw error;
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Swap employee for a specific job on a specific day.
+ * Removes the original employee's log and creates one for the replacement.
+ */
+export async function swapEmployee(
+  jobId: string,
+  originalEmployeeId: string,
+  newEmployeeId: string,
+  date: string,
+  hours: number
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // Delete original entry if exists
+  await supabase
+    .from("work_logs")
+    .delete()
+    .eq("job_id", jobId)
+    .eq("employee_id", originalEmployeeId)
+    .eq("date", date);
+
+  // Create entry for new employee
+  const { error } = await supabase
+    .from("work_logs")
+    .upsert(
+      {
+        user_id: user.id,
+        job_id: jobId,
+        employee_id: newEmployeeId,
+        date,
+        hours,
+        checked: false,
+        is_extra: false,
+      },
+      { onConflict: "job_id,employee_id,date" }
+    );
+
+  if (error) throw error;
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Add extra/unscheduled work
+ */
+export async function addExtraWork(
+  jobId: string,
+  employeeId: string,
+  date: string,
+  hours: number,
+  notes?: string
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase.from("work_logs").insert({
+    user_id: user.id,
+    job_id: jobId,
+    employee_id: employeeId,
+    date,
+    hours,
+    checked: true,
+    is_extra: true,
+    notes: notes || null,
+  });
+
+  if (error) throw error;
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Confirm all unchecked entries for a date
+ */
+export async function confirmAll(date: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // Get the schedule to find entries that need work logs created
+  const entries = await getDailySchedule(date);
+
+  for (const entry of entries) {
+    if (!entry.checked) {
+      await supabase
+        .from("work_logs")
+        .upsert(
+          {
+            user_id: user.id,
+            job_id: entry.job_id,
+            employee_id: entry.employee_id,
+            date,
+            hours: entry.hours,
+            checked: true,
+            is_extra: entry.is_extra,
+          },
+          { onConflict: "job_id,employee_id,date" }
+        );
+    }
+  }
+
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Get count of unchecked days (days with scheduled work but no confirmed logs)
+ */
+export async function getUncheckedDaysCount() {
+  const supabase = await createClient();
+  const today = new Date();
+  // Check last 30 days
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const { data: jobs, error: jobsError } = await supabase
+    .from("jobs")
+    .select("id, work_days")
+    .eq("is_active", true);
+
+  if (jobsError) throw jobsError;
+
+  const { data: logs, error: logsError } = await supabase
+    .from("work_logs")
+    .select("date")
+    .eq("checked", true)
+    .gte("date", thirtyDaysAgo.toISOString().split("T")[0])
+    .lte("date", today.toISOString().split("T")[0]);
+
+  if (logsError) throw logsError;
+
+  const checkedDates = new Set((logs ?? []).map((l) => l.date));
+  let uncheckedCount = 0;
+
+  for (let d = new Date(thirtyDaysAgo); d < today; d.setDate(d.getDate() + 1)) {
+    const jsDay = d.getDay();
+    const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+    const dateStr = d.toISOString().split("T")[0];
+
+    const hasJobsToday = (jobs ?? []).some((j) =>
+      j.work_days?.includes(dayOfWeek)
+    );
+
+    if (hasJobsToday && !checkedDates.has(dateStr)) {
+      uncheckedCount++;
+    }
+  }
+
+  return uncheckedCount;
+}
+
+/**
+ * Get all employees (for swap/extra work dialogs)
+ */
+export async function getAllEmployees() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("employees")
+    .select("id, first_name, last_name")
+    .eq("is_active", true)
+    .order("first_name");
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Get all active jobs (for extra work dialog)
+ */
+export async function getAllJobs() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("id, location_name, default_hours, clients ( id, name )")
+    .eq("is_active", true)
+    .order("location_name");
+
+  if (error) throw error;
+  return (data ?? []).map((j) => ({
+    id: j.id,
+    location_name: j.location_name,
+    default_hours: j.default_hours,
+    clients: j.clients as unknown as { id: string; name: string },
+  }));
+}

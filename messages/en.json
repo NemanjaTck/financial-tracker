@@ -69,7 +69,19 @@
     "swapEmployee": "Swap employee",
     "markNotWorking": "Mark as not working",
     "daysBehind": "{count, plural, =0 {All caught up!} =1 {1 day behind} other {# days behind}}",
-    "schedule": "Schedule"
+    "schedule": "Schedule",
+    "notWorking": "Not working",
+    "uncheckedDays": "Unchecked days",
+    "selectEmployee": "Select employee",
+    "selectJob": "Select job",
+    "hoursWorked": "Hours worked",
+    "extraWork": "Extra work",
+    "confirmAll": "Confirm all",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "noEmployee": "No employee assigned",
+    "swapped": "Swapped",
+    "skipped": "Skipped"
   },
   "employees": {
     "title": "Employees",

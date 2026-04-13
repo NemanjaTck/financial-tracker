@@ -1,29 +1,31 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  getDailySchedule,
+  getAllEmployees,
+  getAllJobs,
+  getUncheckedDaysCount,
+} from "./actions";
+import { DailyOverview } from "./daily-overview";
 
 export default async function DashboardPage() {
-  const t = await getTranslations("home");
+  const today = new Date().toISOString().split("T")[0];
+  const locale = await getLocale();
+
+  const [entries, employees, jobs, uncheckedDays] = await Promise.all([
+    getDailySchedule(today),
+    getAllEmployees(),
+    getAllJobs(),
+    getUncheckedDaysCount(),
+  ]);
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold tracking-tight">{t("title")}</h2>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("today")}</CardTitle>
-          <CardDescription>{t("noJobsToday")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            {t("schedule")}
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <DailyOverview
+      initialEntries={entries}
+      initialDate={today}
+      employees={employees}
+      jobs={jobs}
+      uncheckedDays={uncheckedDays}
+      locale={locale}
+    />
   );
 }
