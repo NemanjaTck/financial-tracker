@@ -28,11 +28,13 @@ type Job = {
   client_rate: number;
   default_hours: number;
   work_days: number[];
+  start_date: string | null;
+  daily_rate: number | null;
   is_active: boolean;
 };
 
-const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat"] as const;
-const DAY_VALUES = [1, 2, 3, 4, 5, 6];
+const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+const DAY_VALUES = [1, 2, 3, 4, 5, 6, 7];
 
 export function JobFormDialog({
   open,
@@ -165,6 +167,30 @@ export function JobFormDialog({
               defaultValue={job?.default_hours ?? ""}
               required
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="start_date">{t("startDate")}</Label>
+              <Input
+                id="start_date"
+                name="start_date"
+                type="date"
+                defaultValue={job?.start_date ?? ""}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="daily_rate">{t("dailyRate")}</Label>
+              <Input
+                id="daily_rate"
+                name="daily_rate"
+                type="number"
+                step="any"
+                min="0"
+                defaultValue={job?.daily_rate ?? ""}
+                placeholder="RSD"
+              />
+            </div>
           </div>
 
           <div className="grid gap-2">

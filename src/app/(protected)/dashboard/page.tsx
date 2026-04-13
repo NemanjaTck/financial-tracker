@@ -4,6 +4,7 @@ import {
   getAllEmployees,
   getAllJobs,
   getUncheckedDaysCount,
+  getUncheckedDates,
   getDashboardAlerts,
 } from "./actions";
 import { DailyOverview } from "./daily-overview";
@@ -12,13 +13,15 @@ export default async function DashboardPage() {
   const today = new Date().toISOString().split("T")[0];
   const locale = await getLocale();
 
-  const [entries, employees, jobs, uncheckedDays, alerts] = await Promise.all([
-    getDailySchedule(today),
-    getAllEmployees(),
-    getAllJobs(),
-    getUncheckedDaysCount(),
-    getDashboardAlerts(),
-  ]);
+  const [entries, employees, jobs, uncheckedDays, uncheckedDates, alerts] =
+    await Promise.all([
+      getDailySchedule(today),
+      getAllEmployees(),
+      getAllJobs(),
+      getUncheckedDaysCount(),
+      getUncheckedDates(),
+      getDashboardAlerts(),
+    ]);
 
   return (
     <DailyOverview
@@ -27,6 +30,7 @@ export default async function DashboardPage() {
       employees={employees}
       jobs={jobs}
       uncheckedDays={uncheckedDays}
+      uncheckedDates={uncheckedDates}
       alerts={alerts}
       locale={locale}
     />

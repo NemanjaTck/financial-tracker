@@ -85,7 +85,8 @@
     "uncheckedWarning": "You have {count, plural, =1 {1 unchecked day} other {# unchecked days}} in the last 30 days. Please review past days to stay up to date.",
     "topClientThisMonth": "Top client this month",
     "overworkedAlert": "Overworked employee",
-    "daysWorkedCount": "days worked"
+    "daysWorkedCount": "days worked",
+    "selectDate": "Select date"
   },
   "employees": {
     "title": "Employees",
@@ -134,6 +135,8 @@
     "assignedEmployees": "Assigned employees",
     "assignEmployee": "Assign employee",
     "noJobs": "No jobs yet",
+    "startDate": "Start date",
+    "dailyRate": "Daily rate (RSD)",
     "days": {
       "mon": "Mon",
       "tue": "Tue",
@@ -229,6 +232,13 @@
     "netProfit": "Net profit",
     "name": "Name",
     "amount": "Amount",
-    "monthly": "Monthly"
+    "monthly": "Monthly",
+    "location": "Location",
+    "displayMode": "Display mode",
+    "byEmployee": "By employee (names)",
+    "byLocation": "By location",
+    "anonymousWorkers": "Anonymous (Worker 1, Worker 2...)",
+    "daysShort": "days",
+    "dailyRate": "Daily rate"
   }
 }

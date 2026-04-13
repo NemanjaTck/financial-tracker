@@ -61,6 +61,7 @@ export function DailyOverview({
   employees,
   jobs,
   uncheckedDays,
+  uncheckedDates,
   alerts,
   locale,
 }: {
@@ -69,6 +70,7 @@ export function DailyOverview({
   employees: Employee[];
   jobs: Job[];
   uncheckedDays: number;
+  uncheckedDates: string[];
   alerts: DashboardAlerts;
   locale: string;
 }) {
@@ -219,7 +221,7 @@ export function DailyOverview({
       )}
 
       {/* Date navigation */}
-      <DateNav date={date} onDateChange={loadSchedule} locale={locale} />
+      <DateNav date={date} onDateChange={loadSchedule} locale={locale} uncheckedDates={uncheckedDates} />
 
       {/* Action bar */}
       <div className="flex items-center gap-2">

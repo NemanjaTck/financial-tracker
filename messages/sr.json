@@ -85,7 +85,8 @@
     "uncheckedWarning": "Imate {count, plural, =1 {1 nepotvrđen dan} few {# nepotvrđena dana} other {# nepotvrđenih dana}} u poslednjih 30 dana. Pregledajte prošle dane da budete ažurni.",
     "topClientThisMonth": "Najbolji klijent ovog meseca",
     "overworkedAlert": "Preopterećen radnik",
-    "daysWorkedCount": "radnih dana"
+    "daysWorkedCount": "radnih dana",
+    "selectDate": "Izaberite datum"
   },
   "employees": {
     "title": "Radnici",
@@ -134,6 +135,8 @@
     "assignedEmployees": "Dodeljeni radnici",
     "assignEmployee": "Dodeli radnika",
     "noJobs": "Nema poslova",
+    "startDate": "Datum početka",
+    "dailyRate": "Dnevnica (RSD)",
     "days": {
       "mon": "Pon",
       "tue": "Uto",
@@ -229,6 +232,13 @@
     "netProfit": "Neto profit",
     "name": "Naziv",
     "amount": "Iznos",
-    "monthly": "Mesečno"
+    "monthly": "Mesečno",
+    "location": "Lokacija",
+    "displayMode": "Režim prikaza",
+    "byEmployee": "Po radniku (imena)",
+    "byLocation": "Po lokaciji",
+    "anonymousWorkers": "Anonimno (Radnik 1, Radnik 2...)",
+    "daysShort": "dana",
+    "dailyRate": "Dnevnica"
   }
 }

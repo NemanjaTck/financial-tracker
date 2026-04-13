@@ -46,13 +46,15 @@ type Job = {
   client_rate: number;
   default_hours: number;
   work_days: number[];
+  start_date: string | null;
+  daily_rate: number | null;
   is_active: boolean;
   clients: Client;
   job_assignments: JobAssignment[];
 };
 
-const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat"] as const;
-const DAY_VALUES = [1, 2, 3, 4, 5, 6];
+const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+const DAY_VALUES = [1, 2, 3, 4, 5, 6, 7];
 
 export function JobsList({
   jobs,

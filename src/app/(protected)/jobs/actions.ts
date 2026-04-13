@@ -52,6 +52,9 @@ export async function createJob(formData: FormData) {
   const workDaysStr = formData.get("work_days") as string;
   const workDays = workDaysStr ? workDaysStr.split(",").map(Number) : [];
 
+  const startDate = formData.get("start_date") as string;
+  const dailyRate = formData.get("daily_rate") as string;
+
   const { error } = await supabase.from("jobs").insert({
     user_id: user.id,
     client_id: formData.get("client_id") as string,
@@ -60,6 +63,8 @@ export async function createJob(formData: FormData) {
     client_rate: parseFloat(formData.get("client_rate") as string),
     default_hours: parseFloat(formData.get("default_hours") as string),
     work_days: workDays,
+    start_date: startDate || null,
+    daily_rate: dailyRate ? parseFloat(dailyRate) : null,
   });
 
   if (error) throw error;
@@ -74,6 +79,9 @@ export async function updateJob(formData: FormData) {
   const workDaysStr = formData.get("work_days") as string;
   const workDays = workDaysStr ? workDaysStr.split(",").map(Number) : [];
 
+  const startDate = formData.get("start_date") as string;
+  const dailyRate = formData.get("daily_rate") as string;
+
   const { error } = await supabase
     .from("jobs")
     .update({
@@ -83,6 +91,8 @@ export async function updateJob(formData: FormData) {
       client_rate: parseFloat(formData.get("client_rate") as string),
       default_hours: parseFloat(formData.get("default_hours") as string),
       work_days: workDays,
+      start_date: startDate || null,
+      daily_rate: dailyRate ? parseFloat(dailyRate) : null,
     })
     .eq("id", id);
 

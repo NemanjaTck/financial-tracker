@@ -17,17 +17,20 @@ import { Label } from "@/components/ui/label";
 import { getClientReportData } from "./report-actions";
 import { generateClientReportPDF } from "@/lib/pdf";
 
+export type ReportDisplayMode = "default" | "by-location" | "anonymous";
+
 export function ClientReportButton({ clientId }: { clientId: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [displayMode, setDisplayMode] = useState<ReportDisplayMode>("default");
 
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   function handleGenerate(formData: FormData) {
-    const monthValue = formData.get("month") as string; // YYYY-MM
+    const monthValue = formData.get("month") as string;
     const month = `${monthValue}-01`;
 
     startTransition(async () => {
@@ -35,6 +38,7 @@ export function ClientReportButton({ clientId }: { clientId: string }) {
         const data = await getClientReportData(clientId, month);
         generateClientReportPDF({
           ...data,
+          displayMode,
           labels: {
             clientReport: t("clientReport"),
             period: t("period"),
@@ -46,6 +50,7 @@ export function ClientReportButton({ clientId }: { clientId: string }) {
             totalHours: t("totalHours"),
             totalCost: t("totalCost"),
             visits: t("visits"),
+            location: t("location"),
           },
         });
         setOpen(false);
@@ -54,6 +59,12 @@ export function ClientReportButton({ clientId }: { clientId: string }) {
       }
     });
   }
+
+  const modeOptions: { value: ReportDisplayMode; label: string }[] = [
+    { value: "default", label: t("byEmployee") },
+    { value: "by-location", label: t("byLocation") },
+    { value: "anonymous", label: t("anonymousWorkers") },
+  ];
 
   return (
     <>
@@ -75,6 +86,25 @@ export function ClientReportButton({ clientId }: { clientId: string }) {
                 defaultValue={defaultMonth}
                 required
               />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("displayMode")}</Label>
+              <div className="flex flex-col gap-1.5">
+                {modeOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setDisplayMode(opt.value)}
+                    className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                      displayMode === opt.value
+                        ? "border-primary bg-primary/5 font-medium"
+                        : "border-input hover:bg-muted"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <DialogFooter>
               <Button

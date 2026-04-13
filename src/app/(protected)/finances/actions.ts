@@ -467,3 +467,110 @@ export async function getMonthlyFinancials(
     },
   };
 }
+
+// ─── Accountant Report Data ─────────────────────────────────────────────────
+
+export type AccountantClientData = {
+  name: string;
+  pib: string | null;
+  hours: number;
+  amount: number;
+  dailyRate: number | null;
+  days: number | null;
+  locations: { name: string; days: number }[];
+};
+
+/**
+ * Get enriched data for the accountant report:
+ * Each client with PIB, hours, revenue, daily_rate, and location breakdowns
+ */
+export async function getAccountantReportData(
+  month: string
+): Promise<AccountantClientData[]> {
+  const supabase = await createClient();
+
+  const monthDate = new Date(month + "T00:00:00");
+  const monthStart = month;
+  const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+  const monthEnd = lastDay.toISOString().split("T")[0];
+
+  // Get work logs with job + client info
+  const { data: logs, error } = await supabase
+    .from("work_logs")
+    .select(`
+      hours, job_id, date,
+      jobs ( id, client_rate, daily_rate, location_name, clients ( id, name, pib ) )
+    `)
+    .eq("checked", true)
+    .gte("date", monthStart)
+    .lte("date", monthEnd)
+    .gt("hours", 0);
+
+  if (error) throw error;
+
+  // Group by client
+  const clientMap = new Map<
+    string,
+    {
+      name: string;
+      pib: string | null;
+      hours: number;
+      amount: number;
+      dailyRate: number | null;
+      locationDays: Map<string, Set<string>>; // location -> set of unique dates
+    }
+  >();
+
+  for (const log of logs ?? []) {
+    const job = log.jobs as unknown as {
+      id: string;
+      client_rate: number;
+      daily_rate: number | null;
+      location_name: string;
+      clients: { id: string; name: string; pib: string | null };
+    };
+    const clientId = job.clients.id;
+
+    if (!clientMap.has(clientId)) {
+      clientMap.set(clientId, {
+        name: job.clients.name,
+        pib: job.clients.pib,
+        hours: 0,
+        amount: 0,
+        dailyRate: job.daily_rate ? Number(job.daily_rate) : null,
+        locationDays: new Map(),
+      });
+    }
+
+    const client = clientMap.get(clientId)!;
+    client.hours += Number(log.hours);
+    client.amount += Number(log.hours) * Number(job.client_rate);
+
+    // Track unique days per location
+    if (!client.locationDays.has(job.location_name)) {
+      client.locationDays.set(job.location_name, new Set());
+    }
+    client.locationDays.get(job.location_name)!.add(log.date);
+
+    // Use daily_rate from any job that has one
+    if (job.daily_rate && !client.dailyRate) {
+      client.dailyRate = Number(job.daily_rate);
+    }
+  }
+
+  return Array.from(clientMap.values()).map((c) => ({
+    name: c.name,
+    pib: c.pib,
+    hours: c.hours,
+    amount: c.amount,
+    dailyRate: c.dailyRate,
+    days: Array.from(c.locationDays.values()).reduce(
+      (sum, dates) => sum + dates.size,
+      0
+    ),
+    locations: Array.from(c.locationDays.entries()).map(([name, dates]) => ({
+      name,
+      days: dates.size,
+    })),
+  }));
+}

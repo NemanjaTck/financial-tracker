@@ -367,25 +367,38 @@ export async function confirmAll(date: string) {
 /**
  * Get count of unchecked days (days with scheduled work but no confirmed logs)
  */
+/**
+ * Get unchecked days count. Uses job start_date when available,
+ * otherwise falls back to job created_at. No arbitrary 30-day limit.
+ */
 export async function getUncheckedDaysCount() {
   const supabase = await createClient();
   const today = new Date();
-  // Check last 30 days
-  const thirtyDaysAgo = new Date(today);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   const { data: jobs, error: jobsError } = await supabase
     .from("jobs")
-    .select("id, work_days")
+    .select("id, work_days, start_date, created_at")
     .eq("is_active", true);
 
   if (jobsError) throw jobsError;
+  if (!jobs || jobs.length === 0) return 0;
+
+  // Find earliest job start date
+  const startDates = (jobs ?? []).map((j) => {
+    if (j.start_date) return new Date(j.start_date + "T00:00:00");
+    return new Date(j.created_at);
+  });
+  const earliest = new Date(Math.min(...startDates.map((d) => d.getTime())));
+  // Cap at 90 days back to avoid huge queries for very old jobs
+  const ninetyDaysAgo = new Date(today);
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const lookbackStart = earliest > ninetyDaysAgo ? earliest : ninetyDaysAgo;
 
   const { data: logs, error: logsError } = await supabase
     .from("work_logs")
     .select("date")
     .eq("checked", true)
-    .gte("date", thirtyDaysAgo.toISOString().split("T")[0])
+    .gte("date", lookbackStart.toISOString().split("T")[0])
     .lte("date", today.toISOString().split("T")[0]);
 
   if (logsError) throw logsError;
@@ -393,14 +406,19 @@ export async function getUncheckedDaysCount() {
   const checkedDates = new Set((logs ?? []).map((l) => l.date));
   let uncheckedCount = 0;
 
-  for (let d = new Date(thirtyDaysAgo); d < today; d.setDate(d.getDate() + 1)) {
+  for (let d = new Date(lookbackStart); d < today; d.setDate(d.getDate() + 1)) {
     const jsDay = d.getDay();
     const dayOfWeek = jsDay === 0 ? 7 : jsDay;
     const dateStr = d.toISOString().split("T")[0];
 
-    const hasJobsToday = (jobs ?? []).some((j) =>
-      j.work_days?.includes(dayOfWeek)
-    );
+    // Check if any job with matching work_day had started by this date
+    const hasJobsToday = (jobs ?? []).some((j) => {
+      if (!j.work_days?.includes(dayOfWeek)) return false;
+      const jobStart = j.start_date
+        ? new Date(j.start_date + "T00:00:00")
+        : new Date(j.created_at);
+      return d >= jobStart;
+    });
 
     if (hasJobsToday && !checkedDates.has(dateStr)) {
       uncheckedCount++;
@@ -408,6 +426,64 @@ export async function getUncheckedDaysCount() {
   }
 
   return uncheckedCount;
+}
+
+/**
+ * Get all unchecked dates (for calendar highlighting).
+ * Returns array of date strings (YYYY-MM-DD) that have scheduled work but no check-in.
+ */
+export async function getUncheckedDates(): Promise<string[]> {
+  const supabase = await createClient();
+  const today = new Date();
+
+  const { data: jobs, error: jobsError } = await supabase
+    .from("jobs")
+    .select("id, work_days, start_date, created_at")
+    .eq("is_active", true);
+
+  if (jobsError) throw jobsError;
+  if (!jobs || jobs.length === 0) return [];
+
+  const startDates = (jobs ?? []).map((j) => {
+    if (j.start_date) return new Date(j.start_date + "T00:00:00");
+    return new Date(j.created_at);
+  });
+  const earliest = new Date(Math.min(...startDates.map((d) => d.getTime())));
+  const ninetyDaysAgo = new Date(today);
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const lookbackStart = earliest > ninetyDaysAgo ? earliest : ninetyDaysAgo;
+
+  const { data: logs, error: logsError } = await supabase
+    .from("work_logs")
+    .select("date")
+    .eq("checked", true)
+    .gte("date", lookbackStart.toISOString().split("T")[0])
+    .lte("date", today.toISOString().split("T")[0]);
+
+  if (logsError) throw logsError;
+
+  const checkedDates = new Set((logs ?? []).map((l) => l.date));
+  const unchecked: string[] = [];
+
+  for (let d = new Date(lookbackStart); d < today; d.setDate(d.getDate() + 1)) {
+    const jsDay = d.getDay();
+    const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+    const dateStr = d.toISOString().split("T")[0];
+
+    const hasJobsToday = (jobs ?? []).some((j) => {
+      if (!j.work_days?.includes(dayOfWeek)) return false;
+      const jobStart = j.start_date
+        ? new Date(j.start_date + "T00:00:00")
+        : new Date(j.created_at);
+      return d >= jobStart;
+    });
+
+    if (hasJobsToday && !checkedDates.has(dateStr)) {
+      unchecked.push(dateStr);
+    }
+  }
+
+  return unchecked;
 }
 
 /**
