@@ -5,6 +5,7 @@ import { signout } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export function TopBar() {
   const t = useTranslations("common");
@@ -14,6 +15,7 @@ export function TopBar() {
       <h1 className="text-lg font-semibold md:hidden">Financial Tracker</h1>
       <div className="hidden md:block" />
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <div className="md:hidden">
           <LocaleSwitcher />
         </div>

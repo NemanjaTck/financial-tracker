@@ -30,13 +30,17 @@ export async function signup(formData: FormData) {
     password: formData.get("password") as string,
   };
 
-  const { error } = await supabase.auth.signUp(data);
+  const { error } = await supabase.auth.signUp({
+    ...data,
+    options: { emailRedirectTo: undefined },
+  });
 
   if (error) {
     redirect("/signup?error=" + encodeURIComponent(error.message));
   }
 
-  redirect("/signup?message=" + encodeURIComponent("Check your email to confirm your account."));
+  revalidatePath("/", "layout");
+  redirect("/dashboard");
 }
 
 export async function signout() {

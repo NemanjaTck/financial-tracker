@@ -80,7 +80,7 @@ export function SwapEmployeeDialog({
             <select
               value={selectedId}
               onChange={(e) => setSelectedId(e.target.value)}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="h-10 w-full rounded-lg border border-input bg-transparent px-3 text-base md:text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <option value="" disabled>
                 --

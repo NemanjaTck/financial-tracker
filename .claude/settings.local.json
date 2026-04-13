@@ -24,7 +24,8 @@
       "Bash(grep -E \"\\\\.\\(md|txt|json\\)$\")",
       "Bash(ls -la /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker/.env*)",
       "Bash(ls -la /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker/src/app/\\\\\\(protected\\\\\\)/*/)",
-      "Bash(grep -i \"notification\\\\|reminder\\\\|delay\\\\|overwork\" /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker/messages/*.json)"
+      "Bash(grep -i \"notification\\\\|reminder\\\\|delay\\\\|overwork\" /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker/messages/*.json)",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }

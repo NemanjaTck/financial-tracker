@@ -21,7 +21,6 @@ import {
 function SignupForm() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
-  const message = searchParams.get("message");
   const t = useTranslations("auth");
 
   return (
@@ -44,15 +43,6 @@ function SignupForm() {
                 className="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
               >
                 {error}
-              </motion.div>
-            )}
-            {message && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="rounded-md bg-primary/10 p-3 text-sm text-primary"
-              >
-                {message}
               </motion.div>
             )}
             <div className="space-y-2">

@@ -368,7 +368,7 @@ export function FinancesContent({
                                 type="number"
                                 value={editAmount}
                                 onChange={(e) => setEditAmount(e.target.value)}
-                                className="w-24 h-8"
+                                className="w-28 h-10"
                                 min="0"
                                 step="0.01"
                               />
