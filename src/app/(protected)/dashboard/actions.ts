@@ -426,6 +426,83 @@ export async function getAllEmployees() {
 }
 
 /**
+ * Get dashboard alerts: top client (current month), overworked employees
+ */
+export type DashboardAlerts = {
+  topClient: { name: string; revenue: number } | null;
+  overworkedEmployees: { name: string; daysWorked: number }[];
+};
+
+export async function getDashboardAlerts(): Promise<DashboardAlerts> {
+  const supabase = await createClient();
+  const now = new Date();
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+  // Get current month work logs
+  const { data: logs, error } = await supabase
+    .from("work_logs")
+    .select(`
+      hours, employee_id, job_id, date,
+      jobs ( client_rate, clients ( id, name ) ),
+      employees ( id, first_name, last_name )
+    `)
+    .eq("checked", true)
+    .gt("hours", 0)
+    .gte("date", monthStart)
+    .lte("date", monthEnd);
+
+  if (error) throw error;
+
+  // Top client by revenue
+  const clientRevMap = new Map<string, { name: string; revenue: number }>();
+  // Employee work days
+  const empDaysMap = new Map<string, { name: string; dates: Set<string> }>();
+
+  for (const log of logs ?? []) {
+    const job = log.jobs as unknown as { client_rate: number; clients: { id: string; name: string } };
+    const emp = log.employees as unknown as { id: string; first_name: string; last_name: string };
+
+    // Client revenue
+    const clientId = job.clients.id;
+    const rev = Number(log.hours) * Number(job.client_rate);
+    if (!clientRevMap.has(clientId)) {
+      clientRevMap.set(clientId, { name: job.clients.name, revenue: 0 });
+    }
+    clientRevMap.get(clientId)!.revenue += rev;
+
+    // Employee work days
+    if (!empDaysMap.has(log.employee_id)) {
+      empDaysMap.set(log.employee_id, {
+        name: `${emp.first_name} ${emp.last_name}`,
+        dates: new Set(),
+      });
+    }
+    empDaysMap.get(log.employee_id)!.dates.add(log.date);
+  }
+
+  // Top client
+  let topClient: DashboardAlerts["topClient"] = null;
+  for (const [, data] of clientRevMap) {
+    if (!topClient || data.revenue > topClient.revenue) {
+      topClient = { name: data.name, revenue: data.revenue };
+    }
+  }
+
+  // Overworked: employees who worked more than 24 days this month
+  const overworkedEmployees: DashboardAlerts["overworkedEmployees"] = [];
+  for (const [, data] of empDaysMap) {
+    if (data.dates.size > 24) {
+      overworkedEmployees.push({ name: data.name, daysWorked: data.dates.size });
+    }
+  }
+  overworkedEmployees.sort((a, b) => b.daysWorked - a.daysWorked);
+
+  return { topClient, overworkedEmployees };
+}
+
+/**
  * Get all active jobs (for extra work dialog)
  */
 export async function getAllJobs() {

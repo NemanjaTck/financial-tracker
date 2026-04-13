@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClientFormDialog } from "./client-form-dialog";
+import { ClientReportButton } from "./client-report-button";
 import { deleteClientRecord, toggleClientActive } from "./actions";
 
 type Client = {
@@ -114,6 +115,7 @@ export function ClientsList({ clients }: { clients: Client[] }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  <ClientReportButton clientId={client.id} />
                   <Button
                     variant="ghost"
                     size="icon-sm"

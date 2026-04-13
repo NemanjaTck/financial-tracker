@@ -1,12 +1,18 @@
-import { getTranslations } from "next-intl/server";
+import { getMonthlyFinancials } from "./actions";
+import { FinancesPage as FinancesPageClient } from "./finances-page-client";
 
-export default async function FinancesPage() {
-  const t = await getTranslations("finances");
+export default async function FinancesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
+  const params = await searchParams;
+  const now = new Date();
+  const month =
+    params.month ??
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold tracking-tight">{t("title")}</h2>
-      <p className="text-muted-foreground">{t("noFixedCosts")}</p>
-    </div>
-  );
+  const data = await getMonthlyFinancials(month);
+
+  return <FinancesPageClient data={data} initialMonth={month} />;
 }
