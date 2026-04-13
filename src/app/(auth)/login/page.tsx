@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { login } from "../actions";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import {
 function LoginForm() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
+  const t = useTranslations("auth");
 
   return (
     <motion.div
@@ -29,10 +31,8 @@ function LoginForm() {
     >
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-          <CardDescription>
-            Sign in to your account to continue
-          </CardDescription>
+          <CardTitle className="text-2xl font-bold">{t("welcomeBack")}</CardTitle>
+          <CardDescription>{t("signInDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form action={login} className="space-y-4">
@@ -46,35 +46,35 @@ function LoginForm() {
               </motion.div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("email")}</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder={t("emailPlaceholder")}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("password")}</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
-                placeholder="Your password"
+                placeholder={t("passwordPlaceholder")}
                 required
               />
             </div>
             <Button type="submit" className="w-full">
-              Sign in
+              {t("signIn")}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            {t("noAccount")}{" "}
             <Link href="/signup" className="text-primary underline-offset-4 hover:underline">
-              Sign up
+              {t("signUp")}
             </Link>
           </p>
         </CardFooter>

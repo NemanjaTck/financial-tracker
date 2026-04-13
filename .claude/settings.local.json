@@ -3,7 +3,20 @@
     "allow": [
       "Bash(bunx create-next-app@latest . --typescript --tailwind --app --src-dir --eslint --turbopack --import-alias \"@/*\" --yes)",
       "Bash(bun add:*)",
-      "Bash(bunx shadcn@latest init -d)"
+      "Bash(bunx shadcn@latest init -d)",
+      "Bash(bunx shadcn@latest add input label card sonner -y)",
+      "Bash(bun run:*)",
+      "WebSearch",
+      "Bash(git -C /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker status)",
+      "Bash(git -C /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker diff --stat)",
+      "Bash(git -C /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker log --oneline -5)",
+      "Bash(git -C /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker diff --cached --stat)",
+      "Bash(git add:*)",
+      "Bash(git -C /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker add bun.lock package.json src/app/layout.tsx src/app/page.tsx \"src/app/\\(auth\\)/\" \"src/app/\\(protected\\)/\" src/app/auth/ src/components/ui/card.tsx src/components/ui/input.tsx src/components/ui/label.tsx src/components/ui/sonner.tsx src/lib/supabase/ src/proxy.ts)",
+      "Bash(git -C /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker add -f .env.local.example)",
+      "Bash(git -C /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker commit -m ':*)",
+      "Bash(git -C /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker push origin main)",
+      "Bash(npm run:*)"
     ]
   }
 }

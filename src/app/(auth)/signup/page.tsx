@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { signup } from "../actions";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const message = searchParams.get("message");
+  const t = useTranslations("auth");
 
   return (
     <motion.div
@@ -30,10 +32,8 @@ function SignupForm() {
     >
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Create account</CardTitle>
-          <CardDescription>
-            Get started with your financial tracker
-          </CardDescription>
+          <CardTitle className="text-2xl font-bold">{t("createAccount")}</CardTitle>
+          <CardDescription>{t("signUpDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form action={signup} className="space-y-4">
@@ -56,36 +56,36 @@ function SignupForm() {
               </motion.div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("email")}</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder={t("emailPlaceholder")}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("password")}</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
-                placeholder="Create a password"
+                placeholder={t("createPasswordPlaceholder")}
                 minLength={6}
                 required
               />
             </div>
             <Button type="submit" className="w-full">
-              Sign up
+              {t("signUp")}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
+            {t("hasAccount")}{" "}
             <Link href="/login" className="text-primary underline-offset-4 hover:underline">
-              Sign in
+              {t("signIn")}
             </Link>
           </p>
         </CardFooter>

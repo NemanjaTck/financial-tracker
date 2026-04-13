@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
+  const t = useTranslations("landing");
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-4">
       <motion.div
@@ -15,11 +18,10 @@ export default function Home() {
         className="text-center space-y-4"
       >
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-          Financial Tracker
+          {t("title")}
         </h1>
         <p className="mx-auto max-w-md text-lg text-muted-foreground">
-          Take control of your finances. Track expenses, monitor budgets, and
-          reach your financial goals.
+          {t("description")}
         </p>
       </motion.div>
 
@@ -30,13 +32,13 @@ export default function Home() {
         className="flex gap-4"
       >
         <Link href="/signup" className={cn(buttonVariants({ size: "lg" }))}>
-          Get started
+          {t("getStarted")}
         </Link>
         <Link
           href="/login"
           className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
         >
-          Sign in
+          {t("signIn")}
         </Link>
       </motion.div>
     </div>
