@@ -200,19 +200,27 @@ export function JobFormDialog({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="default_hours">{t("defaultHours")}</Label>
-              <Input
-                id="default_hours"
+            {rateType === "hourly" ? (
+              <div className="grid gap-2">
+                <Label htmlFor="default_hours">{t("defaultHours")}</Label>
+                <Input
+                  id="default_hours"
+                  name="default_hours"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  defaultValue={job?.default_hours ?? ""}
+                  required
+                />
+              </div>
+            ) : (
+              <input
+                type="hidden"
                 name="default_hours"
-                type="number"
-                step="0.5"
-                min="0"
-                defaultValue={job?.default_hours ?? ""}
-                required
+                value={job?.default_hours ?? 8}
               />
-            </div>
-            <div className="grid gap-2">
+            )}
+            <div className={`grid gap-2 ${rateType === "daily" ? "col-span-2" : ""}`}>
               <Label htmlFor="start_date">{t("startDate")}</Label>
               <Input
                 id="start_date"
