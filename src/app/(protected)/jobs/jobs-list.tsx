@@ -48,6 +48,7 @@ type Job = {
   work_days: number[];
   start_date: string | null;
   daily_rate: number | null;
+  rate_type: string | null;
   is_active: boolean;
   clients: Client;
   job_assignments: JobAssignment[];

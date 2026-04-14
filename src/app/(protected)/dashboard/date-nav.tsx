@@ -110,15 +110,7 @@ export function DateNav({
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => changeDay(-1)}
-          aria-label={t("previousDay")}
-        >
-          <ChevronLeft />
-        </Button>
+      <div className="flex items-center justify-center">
         <button
           onClick={openCalendar}
           className="text-center flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted transition-colors"
@@ -132,15 +124,6 @@ export function DateNav({
             {formatDate(date, locale)}
           </span>
         </button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => changeDay(1)}
-          disabled={isToday(date)}
-          aria-label={t("nextDay")}
-        >
-          <ChevronRight />
-        </Button>
       </div>
 
       <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>

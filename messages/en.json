@@ -137,6 +137,11 @@
     "noJobs": "No jobs yet",
     "startDate": "Start date",
     "dailyRate": "Daily rate (RSD)",
+    "rateType": "Rate type",
+    "hourlyMode": "Hourly",
+    "dailyMode": "Daily",
+    "employeeDailyRate": "Employee daily rate (RSD)",
+    "clientDailyRate": "Client daily rate (RSD)",
     "days": {
       "mon": "Mon",
       "tue": "Tue",

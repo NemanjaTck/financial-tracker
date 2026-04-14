@@ -30,6 +30,7 @@ type Job = {
   work_days: number[];
   start_date: string | null;
   daily_rate: number | null;
+  rate_type: string | null;
   is_active: boolean;
 };
 
@@ -59,6 +60,10 @@ export function JobFormDialog({
     job?.work_days ?? [1, 2, 3, 4, 5]
   );
 
+  const [rateType, setRateType] = useState<"hourly" | "daily">(
+    (job?.rate_type as "hourly" | "daily") ?? "hourly"
+  );
+
   function toggleDay(day: number) {
     setSelectedDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
@@ -67,6 +72,7 @@ export function JobFormDialog({
 
   function handleSubmit(formData: FormData) {
     formData.set("work_days", selectedDays.join(","));
+    formData.set("rate_type", rateType);
 
     startTransition(async () => {
       try {
@@ -79,6 +85,7 @@ export function JobFormDialog({
         onOpenChange(false);
         formRef.current?.reset();
         setSelectedDays([1, 2, 3, 4, 5]);
+        setRateType("hourly");
       } catch {
         toast.error(isEditing ? "Failed to update" : "Failed to create");
       }
@@ -90,7 +97,10 @@ export function JobFormDialog({
       open={open}
       onOpenChange={(o) => {
         onOpenChange(o);
-        if (!o) setSelectedDays(job?.work_days ?? [1, 2, 3, 4, 5]);
+        if (!o) {
+          setSelectedDays(job?.work_days ?? [1, 2, 3, 4, 5]);
+          setRateType((job?.rate_type as "hourly" | "daily") ?? "hourly");
+        }
       }}
     >
       <DialogContent className="sm:max-w-md">
@@ -129,9 +139,40 @@ export function JobFormDialog({
             />
           </div>
 
+          {/* Rate type toggle */}
+          <div className="grid gap-2">
+            <Label>{t("rateType")}</Label>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setRateType("hourly")}
+                className={`flex h-8 flex-1 items-center justify-center rounded-lg border text-xs font-medium transition-colors ${
+                  rateType === "hourly"
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-input bg-transparent text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {t("hourlyMode")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRateType("daily")}
+                className={`flex h-8 flex-1 items-center justify-center rounded-lg border text-xs font-medium transition-colors ${
+                  rateType === "daily"
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-input bg-transparent text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {t("dailyMode")}
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="employee_rate">{t("employeeRate")}</Label>
+              <Label htmlFor="employee_rate">
+                {rateType === "hourly" ? t("employeeRate") : t("employeeDailyRate")}
+              </Label>
               <Input
                 id="employee_rate"
                 name="employee_rate"
@@ -143,7 +184,9 @@ export function JobFormDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="client_rate">{t("clientRate")}</Label>
+              <Label htmlFor="client_rate">
+                {rateType === "hourly" ? t("clientRate") : t("clientDailyRate")}
+              </Label>
               <Input
                 id="client_rate"
                 name="client_rate"
@@ -156,20 +199,19 @@ export function JobFormDialog({
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="default_hours">{t("defaultHours")}</Label>
-            <Input
-              id="default_hours"
-              name="default_hours"
-              type="number"
-              step="0.5"
-              min="0"
-              defaultValue={job?.default_hours ?? ""}
-              required
-            />
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="default_hours">{t("defaultHours")}</Label>
+              <Input
+                id="default_hours"
+                name="default_hours"
+                type="number"
+                step="0.5"
+                min="0"
+                defaultValue={job?.default_hours ?? ""}
+                required
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="start_date">{t("startDate")}</Label>
               <Input
@@ -177,18 +219,6 @@ export function JobFormDialog({
                 name="start_date"
                 type="date"
                 defaultValue={job?.start_date ?? ""}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="daily_rate">{t("dailyRate")}</Label>
-              <Input
-                id="daily_rate"
-                name="daily_rate"
-                type="number"
-                step="any"
-                min="0"
-                defaultValue={job?.daily_rate ?? ""}
-                placeholder="RSD"
               />
             </div>
           </div>

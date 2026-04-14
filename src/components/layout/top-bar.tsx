@@ -20,7 +20,7 @@ export function TopBar() {
           <LocaleSwitcher />
         </div>
         <form action={signout}>
-          <Button variant="ghost" size="sm" className="gap-2">
+          <Button type="submit" variant="ghost" size="sm" className="gap-2">
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">{t("signOut")}</span>
           </Button>

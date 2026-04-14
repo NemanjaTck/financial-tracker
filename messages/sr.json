@@ -137,6 +137,11 @@
     "noJobs": "Nema poslova",
     "startDate": "Datum početka",
     "dailyRate": "Dnevnica (RSD)",
+    "rateType": "Tip obračuna",
+    "hourlyMode": "Satnica",
+    "dailyMode": "Dnevnica",
+    "employeeDailyRate": "Dnevnica za radnika (RSD)",
+    "clientDailyRate": "Dnevnica za klijenta (RSD)",
     "days": {
       "mon": "Pon",
       "tue": "Uto",

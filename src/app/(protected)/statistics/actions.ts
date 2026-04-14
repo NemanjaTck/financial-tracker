@@ -109,7 +109,7 @@ export async function getStatistics(): Promise<StatisticsData> {
         .lte("date", overallEnd),
       supabase
         .from("jobs")
-        .select("id, work_days")
+        .select("id, work_days, start_date, created_at")
         .eq("is_active", true),
     ]);
 
@@ -289,23 +289,46 @@ export async function getStatistics(): Promise<StatisticsData> {
   const thirtyDaysAgo = new Date(today);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const { data: checkedLogs } = await supabase
-    .from("work_logs")
-    .select("date")
-    .eq("checked", true)
-    .gte("date", thirtyDaysAgo.toISOString().split("T")[0])
-    .lte("date", today.toISOString().split("T")[0]);
-
-  const checkedDates = new Set((checkedLogs ?? []).map((l) => l.date));
   const jobs = jobsRes.data ?? [];
+
+  // Find earliest job start date, capped at 30 days
+  const jobStartDates = jobs.map((j: { start_date?: string | null; created_at: string }) => {
+    if (j.start_date) return new Date(j.start_date + "T00:00:00");
+    return new Date(j.created_at);
+  });
+  const earliestJob = jobStartDates.length > 0
+    ? new Date(Math.min(...jobStartDates.map((d: Date) => d.getTime())))
+    : thirtyDaysAgo;
+  const lookbackStart = earliestJob > thirtyDaysAgo ? earliestJob : thirtyDaysAgo;
+  const lookbackStr = lookbackStart.toISOString().split("T")[0];
+  const todayStr = today.toISOString().split("T")[0];
+
+  const { data: allLogs } = await supabase
+    .from("work_logs")
+    .select("date, job_id")
+    .gte("date", lookbackStr)
+    .lte("date", todayStr);
+
+  const loggedEntries = new Set(
+    (allLogs ?? []).map((l) => `${l.date}_${l.job_id}`)
+  );
   let uncheckedDays = 0;
 
-  for (let d = new Date(thirtyDaysAgo); d < today; d.setDate(d.getDate() + 1)) {
+  for (let d = new Date(lookbackStart); d < today; d.setDate(d.getDate() + 1)) {
     const jsDay = d.getDay();
     const dayOfWeek = jsDay === 0 ? 7 : jsDay;
     const dateStr = d.toISOString().split("T")[0];
-    const hasJobsToday = jobs.some((j) => j.work_days?.includes(dayOfWeek));
-    if (hasJobsToday && !checkedDates.has(dateStr)) {
+
+    const hasMissingJobs = jobs.some((j: { id: string; work_days?: number[]; start_date?: string | null; created_at: string }) => {
+      if (!j.work_days?.includes(dayOfWeek)) return false;
+      const jobStart = j.start_date
+        ? new Date(j.start_date + "T00:00:00")
+        : new Date(j.created_at);
+      if (d < jobStart) return false;
+      return !loggedEntries.has(`${dateStr}_${j.id}`);
+    });
+
+    if (hasMissingJobs) {
       uncheckedDays++;
     }
   }
