@@ -50,7 +50,7 @@ export async function getClientReportData(
   // Get all work logs for this client's jobs in this month
   const { data: jobs } = await supabase
     .from("jobs")
-    .select("id, client_rate, location_name")
+    .select("id, client_rate, location_name, rate_type")
     .eq("client_id", clientId);
 
   if (!jobs || jobs.length === 0) {
@@ -68,6 +68,7 @@ export async function getClientReportData(
   const jobIds = jobs.map((j) => j.id);
   const rateMap = new Map(jobs.map((j) => [j.id, Number(j.client_rate)]));
   const locationMap = new Map(jobs.map((j) => [j.id, j.location_name]));
+  const rateTypeMap = new Map(jobs.map((j) => [j.id, j.rate_type as string | null]));
 
   const { data: logs, error: logsError } = await supabase
     .from("work_logs")
@@ -90,13 +91,14 @@ export async function getClientReportData(
       last_name: string;
     };
     const rate = rateMap.get(log.job_id) ?? 0;
+    const isDaily = rateTypeMap.get(log.job_id) === "daily";
     return {
       date: log.date,
       employee: `${emp.first_name} ${emp.last_name}`,
       location: locationMap.get(log.job_id) ?? "",
       hours: Number(log.hours),
       rate,
-      total: Number(log.hours) * rate,
+      total: isDaily ? rate : Number(log.hours) * rate,
     };
   });
 

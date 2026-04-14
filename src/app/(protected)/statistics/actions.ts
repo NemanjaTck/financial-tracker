@@ -82,7 +82,7 @@ export async function getStatistics(): Promise<StatisticsData> {
         .from("work_logs")
         .select(`
           hours, employee_id, job_id, date,
-          jobs ( id, client_rate, employee_rate, clients ( id, name ) ),
+          jobs ( id, client_rate, employee_rate, rate_type, clients ( id, name ) ),
           employees ( id, first_name, last_name )
         `)
         .eq("checked", true)
@@ -167,6 +167,7 @@ export async function getStatistics(): Promise<StatisticsData> {
       id: string;
       client_rate: number;
       employee_rate: number;
+      rate_type: string | null;
       clients: { id: string; name: string };
     };
     const emp = log.employees as unknown as {
@@ -176,10 +177,11 @@ export async function getStatistics(): Promise<StatisticsData> {
     };
 
     const hours = Number(log.hours);
-    const clientRevenue = hours * Number(job.client_rate);
+    const isDaily = job.rate_type === "daily";
+    const clientRevenue = isDaily ? Number(job.client_rate) : hours * Number(job.client_rate);
     const customRate = customRateMap.get(`${log.job_id}_${log.employee_id}`);
     const empRate = customRate ?? Number(job.employee_rate);
-    const empCost = hours * empRate;
+    const empCost = isDaily ? empRate : hours * empRate;
     const monthKey = log.date.substring(0, 7);
     const mi = getMonthIndex(log.date);
 

@@ -536,7 +536,7 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
     .from("work_logs")
     .select(`
       hours, employee_id, job_id, date,
-      jobs ( client_rate, clients ( id, name ) ),
+      jobs ( client_rate, rate_type, clients ( id, name ) ),
       employees ( id, first_name, last_name )
     `)
     .eq("checked", true)
@@ -552,12 +552,14 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
   const empDaysMap = new Map<string, { name: string; dates: Set<string> }>();
 
   for (const log of logs ?? []) {
-    const job = log.jobs as unknown as { client_rate: number; clients: { id: string; name: string } };
+    const job = log.jobs as unknown as { client_rate: number; rate_type: string | null; clients: { id: string; name: string } };
     const emp = log.employees as unknown as { id: string; first_name: string; last_name: string };
 
     // Client revenue
     const clientId = job.clients.id;
-    const rev = Number(log.hours) * Number(job.client_rate);
+    const rev = job.rate_type === "daily"
+      ? Number(job.client_rate)
+      : Number(log.hours) * Number(job.client_rate);
     if (!clientRevMap.has(clientId)) {
       clientRevMap.set(clientId, { name: job.clients.name, revenue: 0 });
     }

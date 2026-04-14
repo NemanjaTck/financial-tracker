@@ -79,7 +79,7 @@ async function getMonthlyRevenue(
     .from("work_logs")
     .select(`
       hours, job_id,
-      jobs ( id, client_rate, clients ( id, name ) )
+      jobs ( id, client_rate, rate_type, clients ( id, name ) )
     `)
     .eq("checked", true)
     .gte("date", monthStart)
@@ -97,6 +97,7 @@ async function getMonthlyRevenue(
     const job = log.jobs as unknown as {
       id: string;
       client_rate: number;
+      rate_type: string | null;
       clients: { id: string; name: string };
     };
     const clientId = job.clients.id;
@@ -105,8 +106,11 @@ async function getMonthlyRevenue(
       total_hours: 0,
       total_revenue: 0,
     };
+    const revenue = job.rate_type === "daily"
+      ? Number(job.client_rate)
+      : Number(log.hours) * Number(job.client_rate);
     existing.total_hours += Number(log.hours);
-    existing.total_revenue += Number(log.hours) * Number(job.client_rate);
+    existing.total_revenue += revenue;
     byClient.set(clientId, existing);
   }
 
@@ -133,7 +137,7 @@ async function getMonthlySalaries(
     .from("work_logs")
     .select(`
       hours, employee_id, job_id,
-      jobs ( id, employee_rate ),
+      jobs ( id, employee_rate, rate_type ),
       employees ( id, first_name, last_name )
     `)
     .eq("checked", true)
@@ -178,7 +182,7 @@ async function getMonthlySalaries(
   >();
 
   for (const log of logs ?? []) {
-    const job = log.jobs as unknown as { id: string; employee_rate: number };
+    const job = log.jobs as unknown as { id: string; employee_rate: number; rate_type: string | null };
     const emp = log.employees as unknown as {
       id: string;
       first_name: string;
@@ -195,8 +199,9 @@ async function getMonthlySalaries(
       bonuses: 0,
       penalties: 0,
     };
+    const pay = job.rate_type === "daily" ? rate : Number(log.hours) * rate;
     existing.total_hours += Number(log.hours);
-    existing.base_salary += Number(log.hours) * rate;
+    existing.base_salary += pay;
     byEmployee.set(log.employee_id, existing);
   }
 
@@ -499,7 +504,7 @@ export async function getAccountantReportData(
     .from("work_logs")
     .select(`
       hours, job_id, date,
-      jobs ( id, client_rate, daily_rate, location_name, clients ( id, name, pib ) )
+      jobs ( id, client_rate, daily_rate, rate_type, location_name, clients ( id, name, pib ) )
     `)
     .eq("checked", true)
     .gte("date", monthStart)
@@ -526,6 +531,7 @@ export async function getAccountantReportData(
       id: string;
       client_rate: number;
       daily_rate: number | null;
+      rate_type: string | null;
       location_name: string;
       clients: { id: string; name: string; pib: string | null };
     };
@@ -543,8 +549,11 @@ export async function getAccountantReportData(
     }
 
     const client = clientMap.get(clientId)!;
+    const revenue = job.rate_type === "daily"
+      ? Number(job.client_rate)
+      : Number(log.hours) * Number(job.client_rate);
     client.hours += Number(log.hours);
-    client.amount += Number(log.hours) * Number(job.client_rate);
+    client.amount += revenue;
 
     // Track unique days per location
     if (!client.locationDays.has(job.location_name)) {
