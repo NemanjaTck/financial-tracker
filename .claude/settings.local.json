@@ -25,7 +25,16 @@
       "Bash(ls -la /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker/.env*)",
       "Bash(ls -la /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker/src/app/\\\\\\(protected\\\\\\)/*/)",
       "Bash(grep -i \"notification\\\\|reminder\\\\|delay\\\\|overwork\" /Users/nemanjadrobnjak/Desktop/workspace/financial-tracker/messages/*.json)",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(grep -rni \"vanredn\\\\|Izaberi posao\\\\|Odrađeni sati\\\\|Izaberi radnika\" --include=\"*.tsx\" --include=\"*.ts\" --include=\"*.jsx\" --include=\"*.js\" -l)",
+      "Read(//tmp/**)",
+      "Bash(find . -type d -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.next/*' > /tmp/dirs.txt 2>/dev/null; cat /tmp/dirs.txt)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(grep -E \"\\\\.\\(sql|ts|js\\)$\")",
+      "Bash(npx tsc *)",
+      "Bash(bun --version)",
+      "Bash(git restore *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
