@@ -302,33 +302,66 @@ export async function swapEmployee(
   revalidatePath("/dashboard");
 }
 
+export type ExtraWork = {
+  id: string;
+  name: string;
+  amount: number;
+  date: string;
+};
+
 /**
- * Add extra/unscheduled work
+ * Add extra work: a simplified ad-hoc revenue entry (name + amount only).
+ * Not tied to a job, employee, or hours.
  */
-export async function addExtraWork(
-  jobId: string,
-  employeeId: string,
-  date: string,
-  hours: number,
-  notes?: string
-) {
+export async function addExtraWork(name: string, amount: number, date: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { error } = await supabase.from("work_logs").insert({
+  const { error } = await supabase.from("extra_work").insert({
     user_id: user.id,
-    job_id: jobId,
-    employee_id: employeeId,
+    name,
+    amount,
     date,
-    hours,
-    checked: true,
-    is_extra: true,
-    notes: notes || null,
   });
 
   if (error) throw error;
   revalidatePath("/dashboard");
+  revalidatePath("/finances");
+  revalidatePath("/statistics");
+}
+
+/**
+ * Get extra work entries for a given date
+ */
+export async function getExtraWork(date: string): Promise<ExtraWork[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("extra_work")
+    .select("id, name, amount, date")
+    .eq("date", date)
+    .order("created_at");
+
+  if (error) throw error;
+  return (data ?? []).map((e) => ({
+    id: e.id,
+    name: e.name,
+    amount: Number(e.amount),
+    date: e.date,
+  }));
+}
+
+/**
+ * Delete an extra work entry
+ */
+export async function deleteExtraWork(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("extra_work").delete().eq("id", id);
+
+  if (error) throw error;
+  revalidatePath("/dashboard");
+  revalidatePath("/finances");
+  revalidatePath("/statistics");
 }
 
 /**
@@ -593,24 +626,4 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
   overworkedEmployees.sort((a, b) => b.daysWorked - a.daysWorked);
 
   return { topClient, overworkedEmployees };
-}
-
-/**
- * Get all active jobs (for extra work dialog)
- */
-export async function getAllJobs() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("jobs")
-    .select("id, location_name, default_hours, clients ( id, name )")
-    .eq("is_active", true)
-    .order("location_name");
-
-  if (error) throw error;
-  return (data ?? []).map((j) => ({
-    id: j.id,
-    location_name: j.location_name,
-    default_hours: j.default_hours,
-    clients: j.clients as unknown as { id: string; name: string },
-  }));
 }

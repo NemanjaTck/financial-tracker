@@ -49,8 +49,16 @@ export type VariableCost = {
   created_at: string;
 };
 
+export type ExtraWorkItem = {
+  id: string;
+  name: string;
+  amount: number;
+  date: string;
+};
+
 export type MonthlyFinancials = {
   revenue: RevenueByClient[];
+  extraWork: ExtraWorkItem[];
   salaries: SalaryByEmployee[];
   fixedCosts: FixedCost[];
   monthlyCostEntries: MonthlyCostEntry[];
@@ -426,7 +434,7 @@ export async function getMonthlyFinancials(
   await ensureMonthlyCostEntries(month);
 
   // Fetch all data in parallel
-  const [revenue, salaries, fixedCosts, monthlyCostEntries, variableCostsData] =
+  const [revenue, salaries, fixedCosts, monthlyCostEntries, variableCostsData, extraWorkData] =
     await Promise.all([
       getMonthlyRevenue(monthStart, monthEnd),
       getMonthlySalaries(monthStart, monthEnd),
@@ -442,12 +450,28 @@ export async function getMonthlyFinancials(
         .gte("date", monthStart)
         .lte("date", monthEnd)
         .order("date"),
+      supabase
+        .from("extra_work")
+        .select("id, name, amount, date")
+        .gte("date", monthStart)
+        .lte("date", monthEnd)
+        .order("date"),
     ]);
 
   if (monthlyCostEntries.error) throw monthlyCostEntries.error;
   if (variableCostsData.error) throw variableCostsData.error;
+  if (extraWorkData.error) throw extraWorkData.error;
 
-  const totalRevenue = revenue.reduce((sum, r) => sum + r.total_revenue, 0);
+  const extraWork: ExtraWorkItem[] = (extraWorkData.data ?? []).map((e) => ({
+    id: e.id,
+    name: e.name,
+    amount: Number(e.amount),
+    date: e.date,
+  }));
+
+  const clientRevenue = revenue.reduce((sum, r) => sum + r.total_revenue, 0);
+  const extraRevenue = extraWork.reduce((sum, e) => sum + e.amount, 0);
+  const totalRevenue = clientRevenue + extraRevenue;
   const totalSalaries = salaries.reduce((sum, s) => sum + s.net_salary, 0);
   const totalFixedCosts = (monthlyCostEntries.data ?? [])
     .filter((e) => !e.is_disabled)
@@ -459,6 +483,7 @@ export async function getMonthlyFinancials(
 
   return {
     revenue,
+    extraWork,
     salaries,
     fixedCosts,
     monthlyCostEntries: monthlyCostEntries.data ?? [],

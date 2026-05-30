@@ -76,7 +76,7 @@ export async function getStatistics(): Promise<StatisticsData> {
   const overallEnd = months[months.length - 1].end;
 
   // Fetch all data needed in parallel
-  const [workLogsRes, assignmentsRes, bonusesRes, monthlyCostsRes, variableCostsRes, jobsRes] =
+  const [workLogsRes, assignmentsRes, bonusesRes, monthlyCostsRes, variableCostsRes, extraWorkRes, jobsRes] =
     await Promise.all([
       supabase
         .from("work_logs")
@@ -108,6 +108,11 @@ export async function getStatistics(): Promise<StatisticsData> {
         .gte("date", overallStart)
         .lte("date", overallEnd),
       supabase
+        .from("extra_work")
+        .select("amount, date")
+        .gte("date", overallStart)
+        .lte("date", overallEnd),
+      supabase
         .from("jobs")
         .select("id, work_days, start_date, created_at")
         .eq("is_active", true),
@@ -118,6 +123,7 @@ export async function getStatistics(): Promise<StatisticsData> {
   if (bonusesRes.error) throw bonusesRes.error;
   if (monthlyCostsRes.error) throw monthlyCostsRes.error;
   if (variableCostsRes.error) throw variableCostsRes.error;
+  if (extraWorkRes.error) throw extraWorkRes.error;
   if (jobsRes.error) throw jobsRes.error;
 
   const logs = workLogsRes.data ?? [];
@@ -125,6 +131,7 @@ export async function getStatistics(): Promise<StatisticsData> {
   const bonuses = bonusesRes.data ?? [];
   const monthlyCosts = monthlyCostsRes.data ?? [];
   const variableCosts = variableCostsRes.data ?? [];
+  const extraWork = extraWorkRes.data ?? [];
 
   // Build custom rate map
   const customRateMap = new Map<string, number>();
@@ -247,6 +254,14 @@ export async function getStatistics(): Promise<StatisticsData> {
     const mi = getMonthIndex(vc.date);
     if (mi >= 0) {
       monthlyTrends[mi].variableCosts += Number(vc.amount);
+    }
+  }
+
+  // Extra work (ad-hoc revenue) per month
+  for (const ew of extraWork) {
+    const mi = getMonthIndex(ew.date);
+    if (mi >= 0) {
+      monthlyTrends[mi].revenue += Number(ew.amount);
     }
   }
 

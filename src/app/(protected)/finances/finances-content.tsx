@@ -201,33 +201,62 @@ export function FinancesContent({
           </Card>
 
           {/* Revenue by client */}
-          {data.revenue.length === 0 ? (
+          {data.revenue.length === 0 && data.extraWork.length === 0 ? (
             <p className="text-muted-foreground py-4 text-center">
               {t("noRevenue")}
             </p>
           ) : (
             <>
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                {t("revenueByClient")}
-              </h3>
-              <div className="grid gap-2">
-                {data.revenue.map((r) => (
-                  <Card key={r.client_id} size="sm">
-                    <CardContent className="flex items-center justify-between">
-                      <div>
-                        <span className="font-medium">{r.client_name}</span>
-                        <div className="text-xs text-muted-foreground">
-                          {r.total_hours}
-                          {t("hoursShort")}
-                        </div>
-                      </div>
-                      <span className="font-semibold text-green-600">
-                        {formatRSD(r.total_revenue)} {t("rsd")}
-                      </span>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {data.revenue.length > 0 && (
+                <>
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                    {t("revenueByClient")}
+                  </h3>
+                  <div className="grid gap-2">
+                    {data.revenue.map((r) => (
+                      <Card key={r.client_id} size="sm">
+                        <CardContent className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium">{r.client_name}</span>
+                            <div className="text-xs text-muted-foreground">
+                              {r.total_hours}
+                              {t("hoursShort")}
+                            </div>
+                          </div>
+                          <span className="font-semibold text-green-600">
+                            {formatRSD(r.total_revenue)} {t("rsd")}
+                          </span>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {data.extraWork.length > 0 && (
+                <>
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                    {t("extraWork")}
+                  </h3>
+                  <div className="grid gap-2">
+                    {data.extraWork.map((e) => (
+                      <Card key={e.id} size="sm">
+                        <CardContent className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium">{e.name}</span>
+                            <div className="text-xs text-muted-foreground">
+                              {e.date}
+                            </div>
+                          </div>
+                          <span className="font-semibold text-green-600">
+                            {formatRSD(e.amount)} {t("rsd")}
+                          </span>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

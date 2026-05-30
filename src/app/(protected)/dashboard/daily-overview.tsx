@@ -9,6 +9,8 @@ import {
   AlertTriangle,
   Trophy,
   AlertCircle,
+  Star,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,8 +22,11 @@ import { SwapEmployeeDialog } from "./swap-employee-dialog";
 import { AddExtraDialog } from "./add-extra-dialog";
 import {
   getDailySchedule,
+  getExtraWork,
+  deleteExtraWork,
   confirmAll,
   type ScheduleEntry,
+  type ExtraWork,
   type DashboardAlerts,
 } from "./actions";
 
@@ -29,13 +34,6 @@ type Employee = {
   id: string;
   first_name: string;
   last_name: string;
-};
-
-type Job = {
-  id: string;
-  location_name: string;
-  default_hours: number;
-  clients: { id: string; name: string };
 };
 
 function groupByClient(entries: ScheduleEntry[]) {
@@ -57,18 +55,18 @@ function formatRSD(amount: number): string {
 
 export function DailyOverview({
   initialEntries,
+  initialExtraWork,
   initialDate,
   employees,
-  jobs,
   uncheckedDays,
   uncheckedDates,
   alerts,
   locale,
 }: {
   initialEntries: ScheduleEntry[];
+  initialExtraWork: ExtraWork[];
   initialDate: string;
   employees: Employee[];
-  jobs: Job[];
   uncheckedDays: number;
   uncheckedDates: string[];
   alerts: DashboardAlerts;
@@ -77,6 +75,7 @@ export function DailyOverview({
   const t = useTranslations("home");
   const [date, setDate] = useState(initialDate);
   const [entries, setEntries] = useState(initialEntries);
+  const [extraWork, setExtraWork] = useState(initialExtraWork);
   const [isLoading, startTransition] = useTransition();
 
   // Edit hours dialog
@@ -105,8 +104,12 @@ export function DailyOverview({
       setDate(newDate);
       startTransition(async () => {
         try {
-          const data = await getDailySchedule(newDate);
-          setEntries(data);
+          const [schedule, extra] = await Promise.all([
+            getDailySchedule(newDate),
+            getExtraWork(newDate),
+          ]);
+          setEntries(schedule);
+          setExtraWork(extra);
         } catch {
           toast.error("Failed to load schedule");
         }
@@ -120,14 +123,31 @@ export function DailyOverview({
     if (!editOpen && !swapOpen && !extraOpen) {
       startTransition(async () => {
         try {
-          const data = await getDailySchedule(date);
-          setEntries(data);
+          const [schedule, extra] = await Promise.all([
+            getDailySchedule(date),
+            getExtraWork(date),
+          ]);
+          setEntries(schedule);
+          setExtraWork(extra);
         } catch {
           // silent refresh failure
         }
       });
     }
   }, [editOpen, swapOpen, extraOpen, date, startTransition]);
+
+  function handleDeleteExtra(id: string) {
+    setExtraWork((prev) => prev.filter((e) => e.id !== id));
+    startTransition(async () => {
+      try {
+        await deleteExtraWork(id);
+      } catch {
+        toast.error("Failed to delete");
+        const extra = await getExtraWork(date);
+        setExtraWork(extra);
+      }
+    });
+  }
 
   const grouped = groupByClient(entries);
   const uncheckedCount = entries.filter(
@@ -290,6 +310,38 @@ export function DailyOverview({
         </div>
       )}
 
+      {/* Extra work (ad-hoc revenue) */}
+      {extraWork.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+            <Star className="size-3.5" />
+            {t("extraWork")}
+          </h3>
+          <div className="grid gap-2">
+            {extraWork.map((e) => (
+              <Card key={e.id} size="sm">
+                <CardContent className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-sm truncate">{e.name}</span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-sm font-semibold text-green-600 tabular-nums">
+                      {formatRSD(e.amount)} RSD
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => handleDeleteExtra(e.id)}
+                      disabled={isLoading}
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Dialogs */}
       <EditHoursDialog
         open={editOpen}
@@ -310,8 +362,6 @@ export function DailyOverview({
         open={extraOpen}
         onOpenChange={setExtraOpen}
         date={date}
-        employees={employees}
-        jobs={jobs}
       />
     </div>
   );

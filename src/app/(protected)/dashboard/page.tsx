@@ -1,8 +1,8 @@
 import { getLocale } from "next-intl/server";
 import {
   getDailySchedule,
+  getExtraWork,
   getAllEmployees,
-  getAllJobs,
   getUncheckedDaysCount,
   getUncheckedDates,
   getDashboardAlerts,
@@ -13,11 +13,11 @@ export default async function DashboardPage() {
   const today = new Date().toISOString().split("T")[0];
   const locale = await getLocale();
 
-  const [entries, employees, jobs, uncheckedDays, uncheckedDates, alerts] =
+  const [entries, extraWork, employees, uncheckedDays, uncheckedDates, alerts] =
     await Promise.all([
       getDailySchedule(today),
+      getExtraWork(today),
       getAllEmployees(),
-      getAllJobs(),
       getUncheckedDaysCount(),
       getUncheckedDates(),
       getDashboardAlerts(),
@@ -26,9 +26,9 @@ export default async function DashboardPage() {
   return (
     <DailyOverview
       initialEntries={entries}
+      initialExtraWork={extraWork}
       initialDate={today}
       employees={employees}
-      jobs={jobs}
       uncheckedDays={uncheckedDays}
       uncheckedDates={uncheckedDates}
       alerts={alerts}
